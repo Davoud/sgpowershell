@@ -3,8 +3,10 @@ Import-Module "C:\Users\davoodn\Documents\PowerShell\LineTools.psm1"
 Set-Variable -Name MyWorkSpace -Value "`u{1F349}"
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
-Set-Variable -Name JalaliDate
+Set-Variable -Name JalaliDate -Value "//"
+
 class Config {
+
     [string]$Web
     [string]$EngH
     [string]$Era
@@ -21,31 +23,41 @@ class Config {
     }
 }
 
+function format-drive-name {
+    param (
+        [string]$dn
+    )
+    if ($dn -eq "D:") { return "𝓓" }
+    if ($dn -eq "C:") { return "𝓒" }
+    if ($dn -eq "E:") { return "𝓔" }
+    return $dn    
+}
 
 function prompt { 
-    $oldColor = $Host.UI.RawUI.ForegroundColor   
-    
+    $oldColor = $Host.UI.RawUI.ForegroundColor       
     $fullPath = [System.IO.Path]::GetFullPath($executionContext.SessionState.Path.CurrentLocation)
-
-    $currentFolder = $fullPath -split '[\\/]' `
-         | Where-Object { $_ } `         
-         | ForEach-Object { 
-            if ($_ -eq "D:") { return "𝓓:" }
-            if ($_ -eq "C:") { return "𝓒:" }
-            if ($_ -eq "E:") { return "𝓔:" }
-            return (ANSI $_ -Style "$ITALIC$FG_MAGENTA") 
-         } 
-
-    Write-Host "`n$(Get-AnsiLink `u{1F4C2} $fullPath) $($currentFolder -Join ', ') " -NoNewline 
+    $currentFolder = $fullPath -split '[\\/]' | Where-Object { $_ }    
+    $driveName = format-drive-name $currentFolder[0]   
+    $currentFolder = $currentFolder 
+        | Select-Object -Skip 1 
+        | ForEach-Object { (ANSI $_ -Style "$ITALIC$FG_MAGENTA") }
+          
+    Write-Host "`n $driveName `u{1F4C2} $($currentFolder -Join ', ') " -NoNewline 
         
-    if($null -ne (git rev-parse --git-dir)) {        
-        Write-Host "`n   [$(git branch --show-current)]" -ForegroundColor Cyan
+    if($null -ne (git rev-parse --git-dir)) {
+        $branchName  = (git branch --show-current)        
+        if($branchName.Length -gt 30) {
+            Write-Host "`n   (🌿 $branchName)" -ForegroundColor Cyan
+        }
+        else {
+            Write-Host " (🌿 $branchName)" -ForegroundColor Cyan
+        }
     } else {        
         Write-Host "🛠️ $MyWorkSpace" -ForegroundColor Blue   
     }
 
     $Host.UI.RawUI.ForegroundColor = $oldColor
-    return "🔹 $JalaliDate ➤ " 
+    return "   $JalaliDate ➤ " 
 }
 
 
@@ -65,9 +77,7 @@ function SgInit {
         "ui2" = "D:\SystemGit\UI2\apps\farayar"
     }
 
-    $targetPath = $paths[$wd]
-
-    $global:JalaliDate = Get-JalaliDate
+    $targetPath = $paths[$wd]    
 
     if (Test-Path $targetPath) {	
         Set-Location -Path $targetPath  	   
@@ -80,10 +90,10 @@ function SgInit {
             $json = Get-Content -Path $deployInfo -Raw | ConvertFrom-Json
             $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }
             $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1            
-            $global:MyWorkSpace = "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW") 🛢️ $(ANSI $base.DataBase -Style "$ITALIC")" #`u{1F4C0}
+            $Global:MyWorkSpace = "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW") 🛢️ $(ANSI $base.DataBase -Style "$ITALIC")" #`u{1F4C0}
         }
         else {            
-            $global:MyWorkSpace = $wd            
+            $Global:MyWorkSpace = $wd            
         }
         
     } else {
@@ -133,7 +143,7 @@ function dbset {
     }
 }
  
-function server-set {
+function Server-Set {
     param (       
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]             
         [string]$filePath
@@ -307,3 +317,5 @@ function Get-AnsiLink {
         Write-Error "Invalid path: $FolderPath"
     }
 }
+
+$Global:JalaliDate = Get-JalaliDate
