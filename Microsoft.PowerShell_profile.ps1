@@ -57,7 +57,7 @@ function prompt {
     }
 
     $Host.UI.RawUI.ForegroundColor = $oldColor
-    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED") $JalaliDate ➤ " 
+    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED") $(ANSI $JalaliDate -Style "$BOLD") ➤ " 
 }
 
 
@@ -205,18 +205,39 @@ function Show-Menu {
     Clear-Host        
     WriteANSI "=== === ===    Rahkaran Application Launcher Menu     === === ===" -Style "$BOLD$INVERT"
 
-    $menu = @(
-        [PSCustomObject]@{ Row = "  1  "; Name = "`u{1F539} Rahkaran           "; Description = "(Rahkaran.exe)" }
-        [PSCustomObject]@{ Row = "  2  "; Name = "`u{1F539} Era                "; Description = "(SgRuleActionManager.exe)" }
-        [PSCustomObject]@{ Row = "  3  "; Name = "`u{1F539} Process Engine     "; Description = "(SgProcessEngine.exe)" }
-        [PSCustomObject]@{ Row = "  4  "; Name = "`u{1F539} Server Manager     "; Description = "(ServerManger.exe)" }
-        [PSCustomObject]@{ Row = "  5  "; Name = "`u{1F539} Workflow Designer  "; Description = "(SgProcessEngineHost.exe)" }
-        [PSCustomObject]@{ Row = "  6  "; Name = "`u{1F539} Quit               "; Description = "(Exit the launcher)" }
+    $menu = @(        
+        menuItem 1 "Rahkaran" "Runs Rahkaran.exe (.NETCore)"
+        menuItem 2 "Process Engine" "Runs SgProcessEngine.exe"
+        menuItem 3 "Era" "Runs SgRuleActionManager.exe"
+        menuItem 4 "Workflow Designer" "Runs SgProcessEngineHost.exe"
+        menuItem 5 "Server Manager" "Runs ServerManger.exe"
+        menuItem 6 "Reserved" ""
+        menuSep         
+        menuItem 7 "Framework Solution" "Opens the Framework.sln file"
+        menuItem 8 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
+        menuItem 9 "Era Solution" "Opens the RuleActionManager.sln file"               
+        menuItem 10 "Form Buidler Solution" "Opens the FormBuilder.sln file" 
+        menuSep
+        menuItem 11 "Database Info" "Display connection string info"
+        menuItem 12 "Configurations" "List configuration files"
+        menuItem 13 "Help me!" "Rewrite db connection and rahkaran ulr to all configs"
+        menuSep
+        menuItem 0 "Quit" "Quit App Launcher"
     )
     
     $menu | Format-Table @{Label="     "; Expression={$_.Row}; Width=10; },
                          @{Label="Application                  "; Expression={$_.Name}; Width=60 },
                          @{Label="Description                  "; Expression={$_.Description}; Width=40 } -AutoSize      
+}
+
+function menuItem {
+    param ([string]$num, [string]$lable, [string]$description)
+    return [PSCustomObject]@{ Row = "  $num  "; Name = "`u{1F539} $lable"; Description = $(ANSI $description -Style $ITALIC$DIM) }
+}
+
+function menuSep {
+    param ([string]$lable = "")
+    return [PSCustomObject]@{ Row = ""; Name = "$lable"; Description = "" }    
 }
 
 function Run-Selection {
@@ -229,11 +250,11 @@ function Run-Selection {
             Write-Host "`e]0;Rahkaran`a"
             & ".\Rahkaran.exe" 
           }
-        2 { 
+        3 { 
             Write-Host "Starting SgRuleActionManager.exe..." -ForegroundColor Yellow
             Start-Process "SgRuleActionManager.exe"
           }
-        3 { 
+        2 { 
             Write-Host "`e]0;Process Engine`a"
             & ".\SgProcessEngine.exe" 
           }
@@ -244,7 +265,9 @@ function Run-Selection {
         5 { 
             Write-Host "Starting SgProcessEngineHost.exe..."
             Start-Process "SgProcessEngineHost.exe" }
-        6 { exit }
+        0 { 
+            return 
+          }
         Default { Write-Host "Invalid selection: ($choice) `n" }
     }
 }
@@ -335,5 +358,5 @@ function Get-AnsiLink {
     }
 }
 
-$Global:JalaliDate = Get-JalaliDate
+$Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian
 $Global:JalaliDayOfWeek = Get-JalaliWeekDay

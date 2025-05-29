@@ -77,3 +77,13 @@ function Colorify {
         return "`e[38;2;$R;$G;$B" + "m$Text`e[0m"
     }
 }
+
+function Convert-NumbersToPersian {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline)]
+        [string]$txtInput
+    )
+    $map = @{ '0' = '۰'; '1' = '۱'; '2' = '۲'; '3' = '۳'; '4' = '۴'; '5' = '۵'; '6' = '۶'; '7' = '۷'; '8' = '۸'; '9' = '۹' }
+    $result = $txtInput.ToCharArray() | ForEach-Object { $map["$_"] ?? $_ }
+    return $result -Join ''
+}
