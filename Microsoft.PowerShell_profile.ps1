@@ -4,7 +4,7 @@ Set-Variable -Name MyWorkSpace -Value "`u{1F349}"
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
 Set-Variable -Name JalaliDate -Value "//"
-
+Set-Variable -Name JalaliDayOfWeek -Value " "
 class Config {
 
     [string]$Web
@@ -57,7 +57,7 @@ function prompt {
     }
 
     $Host.UI.RawUI.ForegroundColor = $oldColor
-    return "   $JalaliDate ➤ " 
+    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED") $JalaliDate ➤ " 
 }
 
 
@@ -143,7 +143,7 @@ function dbset {
     }
 }
  
-function Server-Set {
+function Set-ServerUlr {
     param (       
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]             
         [string]$filePath
@@ -266,10 +266,10 @@ function Sg {
     }
    
     Show-Menu
-    $input = Read-Host (ANSI "Enter your choice (1-6)" -Style "$BLINK$FG_YELLOW")
+    $choice = Read-Host (ANSI "Enter your choice (1-6)" -Style "$BLINK$FG_YELLOW")
     
-    if ($input -match '^\d+$') {
-        $choice = [int]$input
+    if ($choice -match '^\d+$') {
+        $choice = [int]$choice
         Run-Selection -choice $choice               
     } else {
         Write-Host "Please enter a valid number.`n"
@@ -299,6 +299,23 @@ function Get-JalaliDate {
     return "$($pc.GetYear($now))/$( '{0:D2}' -f $pc.GetMonth($now) )/$( '{0:D2}' -f $pc.GetDayOfMonth($now) )"
 }
 
+function Get-JalaliWeekDay {
+    $now = Get-Date;
+    $pc = New-Object System.Globalization.PersianCalendar; 
+    $day = $pc.GetDayOfWeek($now);
+
+    switch ($day) {
+        "Monday"    { return "د" }
+        "Tuesday"   { return "س" }
+        "Wednesday" { return "چ" }
+        "Thursday"  { return "پ" }
+        "Friday"    { return "ج" }
+        "Saturday"  { return "ش" }
+        "Sunday"    { return "ی" }
+        default     { return "." }
+    }
+}
+
 function Get-AnsiLink {
     param (
         [string]$Name,
@@ -319,3 +336,4 @@ function Get-AnsiLink {
 }
 
 $Global:JalaliDate = Get-JalaliDate
+$Global:JalaliDayOfWeek = Get-JalaliWeekDay
