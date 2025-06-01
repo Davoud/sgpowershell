@@ -100,10 +100,16 @@ function SgInit {
         else {            
             $Global:MyWorkSpace = $wd            
         }
-        
+             
     } else {
         Write-Error "Path does not exist: $targetPath"
     }
+}
+
+function Get-EnvInfo
+{
+    Write-Host $Global:MyWorkSpace
+    Write-Host "$(ANSI $JalaliDayOfWeek -Style "$FG_RED")  $(ANSI $JalaliDate -Style "$BOLD")"
 }
 
 function trimDate
