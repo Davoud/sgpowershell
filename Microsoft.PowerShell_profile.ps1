@@ -1,6 +1,6 @@
 Import-Module "C:\Users\davoodn\Documents\PowerShell\AnsiUtils.psm1"
 Import-Module "C:\Users\davoodn\Documents\PowerShell\LineTools.psm1"
-Set-Variable -Name MyWorkSpace -Value "`u{1F349}"
+Set-Variable -Name MyWorkSpace -Value ""
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
 Set-Variable -Name JalaliDate -Value "//"
@@ -52,12 +52,17 @@ function prompt {
         else {
             Write-Host " (🌿 $branchName)" -ForegroundColor Cyan
         }
-    } else {        
-        Write-Host "🛠️ $MyWorkSpace" -ForegroundColor Blue   
+    } else {
+        if($MyWorkSpace.Length -gt 0) {        
+            Write-Host "🛠️$MyWorkSpace" -ForegroundColor Blue   
+        }
+        else {
+            Write-Host "(not initialized)" -ForegroundColor DarkGray
+        }
     }
 
     $Host.UI.RawUI.ForegroundColor = $oldColor
-    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED") $(ANSI $JalaliDate -Style "$BOLD") ➤ " 
+    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED")  $(ANSI $JalaliDate -Style "$BOLD") ➤ " 
 }
 
 
@@ -90,7 +95,7 @@ function SgInit {
             $json = Get-Content -Path $deployInfo -Raw | ConvertFrom-Json
             $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }
             $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1            
-            $Global:MyWorkSpace = "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW") 🛢️ $(ANSI $base.DataBase -Style "$ITALIC")" #`u{1F4C0}
+            $Global:MyWorkSpace = "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW") 🛢️$(ANSI $base.DataBase -Style "$ITALIC")" #`u{1F4C0}
         }
         else {            
             $Global:MyWorkSpace = $wd            
