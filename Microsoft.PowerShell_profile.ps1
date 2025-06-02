@@ -1,6 +1,7 @@
 Import-Module "C:\Users\davoodn\Documents\PowerShell\AnsiUtils.psm1"
 Import-Module "C:\Users\davoodn\Documents\PowerShell\LineTools.psm1"
 Set-Variable -Name MyWorkSpace -Value ""
+Set-Variable -Name DbName -Value ""
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
 Set-Variable -Name JalaliDate -Value "//"
@@ -27,9 +28,9 @@ function format-drive-name {
     param (
         [string]$dn
     )
-    if ($dn -eq "D:") { return "𝓓" }
-    if ($dn -eq "C:") { return "𝓒" }
-    if ($dn -eq "E:") { return "𝓔" }
+    if ($dn -eq "D:" || $dn -eq "D") { return "𝓓" }
+    if ($dn -eq "C:" || $dn -eq "C") { return "𝓒" }
+    if ($dn -eq "E:" || $dn -eq "E") { return "𝓔" }
     return $dn    
 }
 
@@ -52,17 +53,13 @@ function prompt {
         else {
             Write-Host " (🌿 $branchName)" -ForegroundColor Cyan
         }
-    } else {
-        if($MyWorkSpace.Length -gt 0) {        
-            Write-Host "🛠️$MyWorkSpace" -ForegroundColor Blue   
-        }
-        else {
-            Write-Host "(not initialized)" -ForegroundColor DarkGray
-        }
-    }
+    } 
+    else {
+        Write-Host ""
+    }    
 
     $Host.UI.RawUI.ForegroundColor = $oldColor
-    return " $(ANSI $JalaliDayOfWeek -Style "$FG_RED")  $(ANSI $JalaliDate -Style "$BOLD") ➤ " 
+    return " ➤ " 
 }
 
 
@@ -95,7 +92,8 @@ function SgInit {
             $json = Get-Content -Path $deployInfo -Raw | ConvertFrom-Json
             $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }
             $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1            
-            $Global:MyWorkSpace = "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW") 🛢️$(ANSI $base.DataBase -Style "$ITALIC")" #`u{1F4C0}
+            $Global:MyWorkSpace = "🛠️$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
+            $Global:DbName = "🛢️$(ANSI $base.DataBase -Style "$ITALIC")" 
         }
         else {            
             $Global:MyWorkSpace = $wd            
@@ -104,12 +102,22 @@ function SgInit {
     } else {
         Write-Error "Path does not exist: $targetPath"
     }
+    Get-EnvInfo
 }
 
 function Get-EnvInfo
 {
-    Write-Host $Global:MyWorkSpace
-    Write-Host "$(ANSI $JalaliDayOfWeek -Style "$FG_RED")  $(ANSI $JalaliDate -Style "$BOLD")"
+    $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian
+    Write-Host "          $(ANSI $Global:JalaliDate -Style "$BOLD")" 
+    Write-Host "          $(ANSI $JalaliDayOfWeek -Style "$BOLD")"
+    
+    if($Global:MyWorkSpace.Length -gt 0) {
+        Write-Host "Build:    $Global:MyWorkSpace"
+    }
+    
+    if($Global:DbName.Length -gt 0) {
+        Write-Host "Database: $Global:DbName"
+    }    
 }
 
 function trimDate
@@ -154,7 +162,7 @@ function dbset {
     }
 }
  
-function Set-ServerUlr {
+function Set-ServerUrl {
     param (       
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]             
         [string]$filePath
@@ -163,6 +171,7 @@ function Set-ServerUlr {
     process {
         
         $reps = @{
+            ':5001' = ':5000'
             ':5191' = ':5000'
             '127.0.0.1/rahkaranAddress' = 'localhost:5000'
             '127.0.0.1/hcmSelfServiceAddress' = 'localhost:5000'
@@ -339,7 +348,7 @@ function Get-JalaliWeekDay {
     $day = $pc.GetDayOfWeek($now);
 
     switch ($day) {
-        "Monday"    { return "د" }
+        "Monday"    { return "هبنش ود" }
         "Tuesday"   { return "س" }
         "Wednesday" { return "چ" }
         "Thursday"  { return "پ" }
@@ -369,5 +378,5 @@ function Get-AnsiLink {
     }
 }
 
-$Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian
+
 $Global:JalaliDayOfWeek = Get-JalaliWeekDay
