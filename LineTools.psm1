@@ -87,3 +87,19 @@ function Convert-NumbersToPersian {
     $result = $txtInput.ToCharArray() | ForEach-Object { $map["$_"] ?? $_ }
     return $result -Join ''
 }
+
+function Get-LeftPadded {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline)]
+        [string]$Text,
+        [int]$TotalLength = 46,
+        [char]$PadChar = ' '
+    )
+
+    if ($Text.Length -ge $TotalLength) {
+        return $Text
+    }
+
+    return $Text.PadLeft($TotalLength, $PadChar)
+}

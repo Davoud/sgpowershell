@@ -90,34 +90,52 @@ function SgInit {
 
         if(Test-Path $deployInfo) {            
             $json = Get-Content -Path $deployInfo -Raw | ConvertFrom-Json
-            $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }
-            $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1            
-            $Global:MyWorkSpace = "🛠️$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
-            $Global:DbName = "🛢️$(ANSI $base.DataBase -Style "$ITALIC")" 
+            $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }            
+            $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1    
+            
+            $Global:MyWorkSpace = if ($bldInfo.Length -gt 2) {        
+                 "🛠️$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
+            } else { "" }
+
+            $Global:DbName = if($base.DataBase.Length -gt 0) { "🛢️$(ANSI $base.DataBase -Style "$ITALIC")" } else { "" }
         }
         else {            
-            $Global:MyWorkSpace = $wd            
+            $Global:MyWorkSpace = ""           
+            $Global:DbName = ""
         }
              
     } else {
         Write-Error "Path does not exist: $targetPath"
     }
+
+
     Get-EnvInfo
 }
-
-function Get-EnvInfo
-{
-    $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian
-    Write-Host "          $(ANSI $Global:JalaliDate -Style "$BOLD")" 
-    Write-Host "          $(ANSI $JalaliDayOfWeek -Style "$BOLD")"
+# ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬
+function Get-EnvInfo {
+    param(
+        $Style = "$BOLD"    
+    )
     
+    $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian    
+    Clear-Host    
+    WriteANSI "════════════════════════════════════════════════════" -Style $Style
+    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(50, ' ')) " -Style $Style    
+    WriteANSI "────────────────────────────────────────────────────" -Style $Style
+    $extInfo = $false
     if($Global:MyWorkSpace.Length -gt 0) {
-        Write-Host "Build:    $Global:MyWorkSpace"
-    }
-    
-    if($Global:DbName.Length -gt 0) {
-        Write-Host "Database: $Global:DbName"
+        $bld = $Global:MyWorkSpace.PadLeft(68, ' ')         
+        WriteANSI "  $bld  " -Style "$BOLD"
+        $extInfo = $true
     }    
+    if($Global:DbName.Length -gt 0) {
+        $db = $Global:DbName.PadLeft(58, ' ')         
+        WriteANSI "  $db " -Style "$BOLD"
+        $extInfo = $true
+    }    
+    if($extInfo) {
+        WriteANSI "════════════════════════════════════════════════════" -Style $Style
+    }
 }
 
 function trimDate
@@ -348,14 +366,14 @@ function Get-JalaliWeekDay {
     $day = $pc.GetDayOfWeek($now);
 
     switch ($day) {
-        "Monday"    { return "هبنش ود" }
-        "Tuesday"   { return "س" }
-        "Wednesday" { return "چ" }
-        "Thursday"  { return "پ" }
-        "Friday"    { return "ج" }
-        "Saturday"  { return "ش" }
-        "Sunday"    { return "ی" }
-        default     { return "." }
+        "Monday"    { return "  " + "هبنش ود"  }
+        "Tuesday"   { return "  " + "هبنش هس"  }
+        "Wednesday" { return "هبنش راهچ" } # چهار شنبه
+        "Thursday"  { return " " + "هبنش جنپ" } # پنج شنبه
+        "Friday"    { return "     " + "هعمج" } # جمعه
+        "Saturday"  { return "     " + "هبنش" } # شنبه
+        "Sunday"    { return "  " + "هبنش کی" } # یک شنبه
+        default     { return "        -" } # 
     }
 }
 
