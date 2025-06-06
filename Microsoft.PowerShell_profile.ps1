@@ -4,7 +4,7 @@ Set-Variable -Name MyWorkSpace -Value ""
 Set-Variable -Name DbName -Value ""
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
-Set-Variable -Name JalaliDate -Value "//"
+Set-Variable -Name JalaliDate -Value ""
 Set-Variable -Name JalaliDayOfWeek -Value " "
 class Config {
 
@@ -23,6 +23,8 @@ class Config {
         $this.Eng = Join-Path $targetPath "SgProcessEngine.$ext.config"        
     }
 }
+
+$JalaliDate = Get-Date
 
 function format-drive-name {
     param (
@@ -43,7 +45,7 @@ function prompt {
         | Select-Object -Skip 1 
         | ForEach-Object { (ANSI $_ -Style "$ITALIC$FG_MAGENTA") }
           
-    Write-Host "`n $driveName `u{1F4C2} $($currentFolder -Join ', ') " -NoNewline 
+    Write-Host " $driveName `u{1F4C2} $($currentFolder -Join ', ') " -NoNewline 
         
     if($null -ne (git rev-parse --git-dir)) {
         $branchName  = (git branch --show-current)        
@@ -108,19 +110,18 @@ function SgInit {
         Write-Error "Path does not exist: $targetPath"
     }
 
+    $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian 
+    $Global:JalaliDayOfWeek = $Global:JalaliDayOfWeek = Get-JalaliWeekDay  
 
-    Get-EnvInfo
+    Get-Ws
 }
-# ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬
-function Get-EnvInfo {
-    param(
-        $Style = "$BOLD"    
-    )
-    
-    $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian    
+
+function Get-Ws {
+    param( $Style = "$BOLD" )        
+
     Clear-Host    
     WriteANSI "════════════════════════════════════════════════════" -Style $Style
-    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(50, ' ')) " -Style $Style    
+    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(33, ' ')) " -Style $Style    
     WriteANSI "────────────────────────────────────────────────────" -Style $Style
     $extInfo = $false
     if($Global:MyWorkSpace.Length -gt 0) {
@@ -249,16 +250,16 @@ function Show-Menu {
         menuItem 3 "Era" "Runs SgRuleActionManager.exe"
         menuItem 4 "Workflow Designer" "Runs SgProcessEngineHost.exe"
         menuItem 5 "Server Manager" "Runs ServerManger.exe"
-        menuItem 6 "Reserved" ""
-        menuSep         
-        menuItem 7 "Framework Solution" "Opens the Framework.sln file"
-        menuItem 8 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
-        menuItem 9 "Era Solution" "Opens the RuleActionManager.sln file"               
-        menuItem 10 "Form Buidler Solution" "Opens the FormBuilder.sln file" 
-        menuSep
-        menuItem 11 "Database Info" "Display connection string info"
-        menuItem 12 "Configurations" "List configuration files"
-        menuItem 13 "Help me!" "Rewrite db connection and rahkaran ulr to all configs"
+        # menuItem 6 "Reserved" ""
+        # menuSep         
+        # menuItem 7 "Framework Solution" "Opens the Framework.sln file"
+        # menuItem 8 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
+        # menuItem 9 "Era Solution" "Opens the RuleActionManager.sln file"               
+        # menuItem 10 "Form Buidler Solution" "Opens the FormBuilder.sln file" 
+        # menuSep
+        # menuItem 11 "Database Info" "Display connection string info"
+        # menuItem 12 "Configurations" "List configuration files"
+        # menuItem 13 "Help me!" "Rewrite db connection and rahkaran ulr to all configs"
         menuSep
         menuItem 0 "Quit" "Quit App Launcher"
     )
@@ -289,19 +290,19 @@ function Run-Selection {
             & ".\Rahkaran.exe" 
           }
         3 { 
-            Write-Host "Starting SgRuleActionManager.exe..." -ForegroundColor Yellow
+            WriteANSI "Starting SgRuleActionManager.exe..." -Style $BLINK
             Start-Process "SgRuleActionManager.exe"
           }
         2 { 
             Write-Host "`e]0;Process Engine`a"
             & ".\SgProcessEngine.exe" 
           }
-        4 { 
-            Write-Host "Starting ServerManager.exe..."
+        5 { 
+            WrietANSI "Starting ServerManager.exe..." -Style $BLINK
             Start-Process "ServerManager.exe"
           }        
-        5 { 
-            Write-Host "Starting SgProcessEngineHost.exe..."
+        4 { 
+            WriteANSI "Starting SgProcessEngineHost.exe..." -Style $BLINK
             Start-Process "SgProcessEngineHost.exe" }
         0 { 
             return 
@@ -366,14 +367,14 @@ function Get-JalaliWeekDay {
     $day = $pc.GetDayOfWeek($now);
 
     switch ($day) {
-        "Monday"    { return "  " + "هبنش ود"  }
-        "Tuesday"   { return "  " + "هبنش هس"  }
+        "Monday"    { return "هبنش ود"  }
+        "Tuesday"   { return "هبنش هس"  }
         "Wednesday" { return "هبنش راهچ" } # چهار شنبه
-        "Thursday"  { return " " + "هبنش جنپ" } # پنج شنبه
-        "Friday"    { return "     " + "هعمج" } # جمعه
-        "Saturday"  { return "     " + "هبنش" } # شنبه
-        "Sunday"    { return "  " + "هبنش کی" } # یک شنبه
-        default     { return "        -" } # 
+        "Thursday"  { return "هبنش جنپ" } # پنج شنبه
+        "Friday"    { return "هعمج" } # جمعه
+        "Saturday"  { return "هبنش" } # شنبه
+        "Sunday"    { return "هبنش کی" } # یک شنبه
+        default     { return "الله" }
     }
 }
 
@@ -396,5 +397,3 @@ function Get-AnsiLink {
     }
 }
 
-
-$Global:JalaliDayOfWeek = Get-JalaliWeekDay
