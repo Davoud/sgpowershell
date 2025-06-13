@@ -87,3 +87,30 @@ function Convert-NumbersToPersian {
     $result = $txtInput.ToCharArray() | ForEach-Object { $map["$_"] ?? " $_ " }
     return $result -Join ''
 }
+
+function Set-Title {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [string]$InputString,
+
+        [Parameter(Mandatory=$false)]
+        [string]$Pattern = 'http://localhost:\d+',
+
+        [Parameter(Mandatory=$false)]
+        [string]$TitlePrefix = "ng " # Optional prefix for the title
+    )
+    Begin {
+        # Optional: Store original title if you want to restore it later (not implemented here)
+        # $OriginalTitle = $Host.UI.RawUI.WindowTitle
+    }
+    Process {        
+        if ($InputString -match $Pattern) {           
+            $Host.UI.RawUI.WindowTitle = "$TitlePrefix$($matches[0])"
+        }        
+        Write-Output $InputString
+    }
+    End {
+        
+    }
+}

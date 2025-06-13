@@ -69,13 +69,14 @@ function prompt {
 function SgInit {
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateSet("dvp", "18", "19", "main", "ui2")]
+        [ValidateSet("dvp", "17", "18", "19", "main", "ui2")]
         [string]$wd
     )     
  
     $paths = @{
         "dvp" = "D:\Alborz\src\System\Dvp\Bin\net8.0-windows"
 	    "main" = "D:\Alborz\src\System\Main\Bin\net8.0-windows"
+        "17" = "D:\Alborz\src\System\Prd\V17\R17.0.x\Bin"
         "18" = "D:\Alborz\src\System\Prd\V18\R18.0.x\Bin"
         "19" = "D:\Alborz\src\System\Prd\V19\R19.0.x\Bin"
         "ui2" = "D:\SystemGit\UI2\apps\farayar"
@@ -117,11 +118,13 @@ function SgInit {
 }
 
 function Get-Ws {
-    param( $Style = "$BOLD" )        
-
+    param( $Style = "$BOLD" )           
+    $month = (Get-Date -Format "MMMM").PadLeft(34, ' ')
+    $date = (Get-Date -Format "yyyy - MM - dd")
     Clear-Host    
     WriteANSI "════════════════════════════════════════════════════" -Style $Style
-    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(33, ' ')) " -Style $Style    
+    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(33, ' ')) " -Style $Style
+    WriteAnSI "  $date $month" -Style $Style    
     WriteANSI "────────────────────────────────────────────────────" -Style $Style
     $extInfo = $false
     if($Global:MyWorkSpace.Length -gt 0) {
@@ -241,29 +244,32 @@ function list-db {
 }
 
 function Show-Menu {
+    param ([bool]$idDev = $false)
+    
     Clear-Host        
     WriteANSI "=== === ===    Rahkaran Application Launcher Menu     === === ===" -Style "$BOLD$INVERT"
 
-    $menu = @(        
-        menuItem 1 "Rahkaran" "Runs Rahkaran.exe (.NETCore)"
-        menuItem 2 "Process Engine" "Runs SgProcessEngine.exe"
-        menuItem 3 "Era" "Runs SgRuleActionManager.exe"
-        menuItem 4 "Workflow Designer" "Runs SgProcessEngineHost.exe"
-        menuItem 5 "Server Manager" "Runs ServerManger.exe"
-        # menuItem 6 "Reserved" ""
-        # menuSep         
-        # menuItem 7 "Framework Solution" "Opens the Framework.sln file"
-        # menuItem 8 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
-        # menuItem 9 "Era Solution" "Opens the RuleActionManager.sln file"               
-        # menuItem 10 "Form Buidler Solution" "Opens the FormBuilder.sln file" 
-        # menuSep
-        # menuItem 11 "Database Info" "Display connection string info"
-        # menuItem 12 "Configurations" "List configuration files"
-        # menuItem 13 "Help me!" "Rewrite db connection and rahkaran ulr to all configs"
-        menuSep
-        menuItem 0 "Quit" "Quit App Launcher"
-    )
-    
+    if($dev) {
+        $menu = @(        
+            menuItem 1 "Framework Solution" "Opens the Framework.sln file"
+            menuItem 2 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
+            menuItem 3 "Era Solution" "Opens the RuleActionManager.sln file"                       
+            menuItem 4 "Form Buidler Solution" "Opens the FormBuilder.sln file" 
+            menuSep
+            menuItem 0 "Quit" "Quit App Launcher"
+        )
+    }
+    else {
+        $menu = @(        
+            menuItem 1 "Rahkaran" "Runs Rahkaran.exe (.NETCore)"
+            menuItem 2 "Process Engine" "Runs SgProcessEngine.exe"
+            menuItem 3 "Era" "Runs SgRuleActionManager.exe"
+            menuItem 4 "Workflow Designer" "Runs SgProcessEngineHost.exe"
+            menuItem 5 "Server Manager" "Runs ServerManger.exe"      
+            menuSep
+            menuItem 0 "Quit" "Quit App Launcher"
+        )
+    }
     $menu | Format-Table @{Label="     "; Expression={$_.Row}; Width=10; },
                          @{Label="Application                  "; Expression={$_.Name}; Width=60 },
                          @{Label="Description                  "; Expression={$_.Description}; Width=40 } -AutoSize      
@@ -279,26 +285,50 @@ function menuSep {
     return [PSCustomObject]@{ Row = ""; Name = "$lable"; Description = "" }    
 }
 
+
 function Run-Selection {
     param (
-        [int]$choice
+        [int]$choice,
+        [bool]$isDev = $false
     )
-
+    #TODO (replce with absoute paths)
+    if($dev) {
+        $pr = if ($Conf.IsNetCore) { ".." } else { "dfc"}
+        switch ($choice) {
+            1 { 
+                 & "..\$pr\Framework\Framework.sln"
+              }              
+            2 {
+                 & "..\$pr\Components\ProcessEngine\ProcessEngine.sln"
+              }
+            3 {
+                &  "..\$pr\Components\BusinessRuleEngine\BusinessRuleEngine.sln"
+              }
+            4 {
+                &  "..\$pr\Components\FormBuilder\FormBuilder.sln"
+              }
+            Default { Write-Host "Invalid selection: ($choice) `n" }  
+        }
+        return;
+    }
+    
     switch ($choice) {
         1 { 
-            Write-Host "`e]0;Rahkaran`a"
-            & ".\Rahkaran.exe" 
+            Write-Host $TITLEBAR "Rahkaran`a"            
+            WriteANSI "                  R A H K A R A N                  " -Style $INVERT$BOLD
+            & ".\Rahkaran.exe" | grep -vE "warn|in app|====>|MetaEntity|\*|\?"
           }
         3 { 
             WriteANSI "Starting SgRuleActionManager.exe..." -Style $BLINK
             Start-Process "SgRuleActionManager.exe"
           }
         2 { 
-            Write-Host "`e]0;Process Engine`a"
+            Write-Host $TITLEBAR "Process Engine`a"
+            WriteANSI "           P R O C E S S    E N G I N E           " -Style $INVERT$BOLD
             & ".\SgProcessEngine.exe" 
           }
         5 { 
-            WrietANSI "Starting ServerManager.exe..." -Style $BLINK
+            WriteANSI "Starting ServerManager.exe..." -Style $BLINK
             Start-Process "ServerManager.exe"
           }        
         4 { 
@@ -314,25 +344,26 @@ function Run-Selection {
 function Sg {
     param (
         [Parameter(Mandatory = $false)]
-        [int]$code
+        [int]$code,        
+        [switch]$dev
     )
-
+        
     if (-not [string]::IsNullOrEmpty($code)) {
        if($code -match '^\d+$') {
          $choice = [int]$code
          if($choice -ge 1 -and $choice -le 6) {
-            Run-Selection -choice $choice         
+            Run-Selection -choice $choice -isDev $dev       
             return
          } 
        }       
     }
    
-    Show-Menu
+    Show-Menu -isDev $dev
     $choice = Read-Host (ANSI "Enter your choice (1-6)" -Style "$BLINK$FG_YELLOW")
     
     if ($choice -match '^\d+$') {
         $choice = [int]$choice
-        Run-Selection -choice $choice               
+        Run-Selection -choice $choice $dev               
     } else {
         Write-Host "Please enter a valid number.`n"
         Pause
@@ -369,11 +400,11 @@ function Get-JalaliWeekDay {
     switch ($day) {
         "Monday"    { return "هبنش ود"  }
         "Tuesday"   { return "هبنش هس"  }
-        "Wednesday" { return "هبنش راهچ" } # چهار شنبه
-        "Thursday"  { return "هبنش جنپ" } # پنج شنبه
-        "Friday"    { return "هعمج" } # جمعه
-        "Saturday"  { return "هبنش" } # شنبه
-        "Sunday"    { return "هبنش کی" } # یک شنبه
+        "Wednesday" { return "هبنش راهچ" }
+        "Thursday"  { return "هبنش جنپ" }
+        "Friday"    { return "هعمج" }
+        "Saturday"  { return "هبنش" }
+        "Sunday"    { return "هبنش کـی" }
         default     { return "الله" }
     }
 }
@@ -396,4 +427,3 @@ function Get-AnsiLink {
         Write-Error "Invalid path: $FolderPath"
     }
 }
-

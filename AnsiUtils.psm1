@@ -3,7 +3,7 @@
 #ANSI "Custom RGB background" -Style "$(BGFromRGB 0 150 255)$FG_WHITE"
 # Reset
 $global:RESET = "`e[0m"
-
+$global:TITLEBAR = "`e]0;"
 $global:HLINK = "e]8;;"
 $global:BEL = "`a"
 
