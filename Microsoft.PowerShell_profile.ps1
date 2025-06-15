@@ -168,7 +168,7 @@ function deploy {
     Start-Process -FilePath "C:\Users\davoodn\Desktop\BuildResultDeployer_Latest\Release\net9.0-windows\BuildResultDeployer.exe"
 }
 
-function dbset {
+function Set-Db {
     param (       
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]             
         [string]$filePath,
@@ -178,7 +178,7 @@ function dbset {
     )
     process {
         (Get-Content -Path $filePath -Raw) `
-            -replace 'connectionString=".*"', `  
+            -replace 'connectionString=".*"', `
             "connectionString=`"Data Source=localhost;Initial Catalog=$name;Integrated Security=False;User ID=sa;Password=1`"" `
             | Set-Content -Path $filePath
     }
@@ -209,11 +209,11 @@ function Set-ServerUrl {
     }
 }
 
-function db {
-    list-db @($Conf.Web, $Conf.Eng, $Conf.EngH, $Conf.Era)
+function Get-Db {
+    Get-DbInfo @($Conf.Web, $Conf.Eng, $Conf.EngH, $Conf.Era)
 }
 
-function list-db {    
+function Get-DbInfo {    
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline=$true)]
         [string[]]$Files
@@ -425,5 +425,42 @@ function Get-AnsiLink {
     }
     catch {
         Write-Error "Invalid path: $FolderPath"
+    }
+}
+
+
+function Set-WebConfig {
+    param ( 
+        [Alias("l", "lock")]       
+        [Parameter(Mandatory = $false)]
+        [string]$LockFileName = "",
+
+        [Alias("db")]       
+        [Parameter(Mandatory = $false)]
+        [string]$DataBase = ""
+    )    
+
+    $remLines = @('ReportServer', 'IsBpmDevelopmentMode', 'ProcessEngineEnabled') 
+    $newLines = @(
+        '        <add key="IsBpmDevelopmentMode" value="true" />', 
+        '        <add key="ProcessEngineEnabled" value="true" />') 
+    
+    if($LockFileName.Length -gt 0) { 
+
+        $remLines += @('LockLicenseGuid', 'SoftLicensePath')
+        $newLines += @(
+            '        <add key="LockLicenseGuid" value="{00000000-0000-0000-0000-00000000000d}" />',
+		    '        <add key="SoftLicensePath" value="D:\soft\' + $LockFileName + '.sgsl" />')
+    }
+
+    Remove-LineByPattern -InputFile $Conf.Web -Patterns $remLines -Verbose
+
+    Add-LinesAfterMatch -InputFile $Conf.Web -MatchPattern "<appSettings>" `
+        -LinesToInsert $newLines `
+        -InsertAfterFirstOnly `
+        -Verbose
+
+    if($DataBase.Length -gt 0) {
+        Set-DB -filePath $Web.Conf -name $DataBase
     }
 }

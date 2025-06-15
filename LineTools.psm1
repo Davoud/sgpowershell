@@ -1,3 +1,86 @@
+function Remove-LineByPattern {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$InputFile,
+
+        [Parameter(Mandatory = $false)]
+        [string]$OutputFile = $InputFile,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Patterns
+    )
+
+    if (-not (Test-Path $InputFile)) {
+        Write-Error "Input file '$InputFile' does not exist."
+        return
+    }
+
+    try {
+        $content = Get-Content $InputFile
+
+        $filteredContent = $content | Where-Object {
+            $line = $_
+            -not ($Patterns | ForEach-Object { $line -match $_ } | Where-Object { $_ })
+        }
+
+        $filteredContent | Set-Content $OutputFile
+
+        Write-Verbose "Filtered file written to '$OutputFile'"
+    }
+    catch {
+        Write-Error "An error occurred: $_"
+    }
+}
+
+function Add-LinesAfterMatch {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$InputFile,
+
+        [Parameter(Mandatory = $false)]
+        [string]$OutputFile = $InputFile,
+
+        [Parameter(Mandatory = $true)]
+        [string]$MatchPattern,  # Regex pattern to match the line
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$LinesToInsert,
+
+        [switch]$InsertAfterFirstOnly  # Insert after first match only (optional)
+    )
+
+    if (-not (Test-Path $InputFile)) {
+        Write-Error "Input file '$InputFile' not found."
+        return
+    }
+
+    try {
+        $content = Get-Content $InputFile
+        $newContent = @()
+        $inserted = $false
+
+        foreach ($line in $content) {
+            $newContent += $line
+            if ($line -match $MatchPattern) {
+                if ($InsertAfterFirstOnly -and $inserted) {
+                    continue
+                }
+
+                $newContent += $LinesToInsert
+                $inserted = $true
+            }
+        }
+
+        $newContent | Set-Content $OutputFile
+        Write-Verbose "Lines inserted and written to '$OutputFile'"
+    }
+    catch {
+        Write-Error "An error occurred: $_"
+    }
+}
+
 function RemoveLine {
     [CmdletBinding()]
     param (
@@ -5,7 +88,7 @@ function RemoveLine {
         [string]$Path,
 
         [Parameter(Mandatory)]
-        [string]$Pattern
+        [string]$Patterns
     )
 
     if (-Not (Test-Path $Path)) {
@@ -14,7 +97,9 @@ function RemoveLine {
     }
 
     $lines = Get-Content $Path
+
     $filteredLines = $lines | Where-Object { $_ -notmatch $Pattern }
+    
     $filteredLines | Set-Content $Path
 }
 
