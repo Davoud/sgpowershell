@@ -86,3 +86,21 @@ function BGFromRGB {
     )
     return "`e[48;2;$R;$G;$B;m"
 }
+
+function Get-PadLeft {
+    param(
+        [string]$Text,        
+        [int]$TotalWidth,
+        [char]$WithChar = ' '
+    )          
+
+    $ansiPattern = "`e\[[\d;]*[a-zA-Z]"
+    $visibleLength = ($Text -replace $ansiPattern).Length
+
+    $padLength = $TotalWidth - $visibleLength    
+
+    if ($padLength -le 0) {
+        return $Text
+    }    
+    return ("$WithChar" * $padLength) + $Text     
+}

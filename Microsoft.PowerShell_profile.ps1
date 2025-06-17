@@ -64,22 +64,26 @@ function prompt {
     return " ➤ " 
 }
 
-
-
 function SgInit {
     param (
-        [Parameter(Mandatory = $true)]
-        [ValidateSet("dvp", "17", "18", "19", "main", "ui2")]
-        [string]$wd
-    )     
- 
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("dvp", "17", "18", "19", "ui2", "ps", "help")]
+        [string]$wd = "help"
+    )          
+
     $paths = @{
-        "dvp" = "D:\Alborz\src\System\Dvp\Bin\net8.0-windows"
-	    "main" = "D:\Alborz\src\System\Main\Bin\net8.0-windows"
+        "dvp" = "D:\Alborz\src\System\Dvp\Bin\net8.0-windows"	   
         "17" = "D:\Alborz\src\System\Prd\V17\R17.0.x\Bin"
         "18" = "D:\Alborz\src\System\Prd\V18\R18.0.x\Bin"
         "19" = "D:\Alborz\src\System\Prd\V19\R19.0.x\Bin"
         "ui2" = "D:\SystemGit\UI2\apps\farayar"
+        "ps" = "C:\Users\davoodn\Documents\PowerShell" 
+    }
+
+    if($wd -eq "help") {
+        WriteANSI "Supported Input: " $BOLD
+        $paths | Format-Table -AutoSize
+        return
     }
 
     $targetPath = $paths[$wd]    
@@ -96,11 +100,12 @@ function SgInit {
             $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }            
             $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1    
             
+            #🛠️
             $Global:MyWorkSpace = if ($bldInfo.Length -gt 2) {        
-                 "🛠️$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
+                 "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
             } else { "" }
-
-            $Global:DbName = if($base.DataBase.Length -gt 0) { "🛢️$(ANSI $base.DataBase -Style "$ITALIC")" } else { "" }
+            #🛢️
+            $Global:DbName = if($base.DataBase.Length -gt 0) { $base.DataBase } else { "" }
         }
         else {            
             $Global:MyWorkSpace = ""           
@@ -119,28 +124,37 @@ function SgInit {
 
 function Get-Ws {
     param( $Style = "$BOLD" )           
-    $month = (Get-Date -Format "MMMM").PadLeft(34, ' ')
+    $w = [Math]::Min($Host.UI.RawUI.WindowSize.Width, 100)
+
     $date = (Get-Date -Format "yyyy - MM - dd")
+    $month = (Get-Date -Format "MMMM").PadLeft($w - $date.Length - 5, ' ')
+    
     Clear-Host    
-    WriteANSI "════════════════════════════════════════════════════" -Style $Style
-    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft(33, ' ')) " -Style $Style
+    WriteANSI ("═" * $w) -Style $Style    
+    WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft($w - $JalaliDate.Length - 5, ' ')) " -Style $Style
     WriteAnSI "  $date $month" -Style $Style    
-    WriteANSI "────────────────────────────────────────────────────" -Style $Style
+    WriteANSI ("─" * $w) -Style $Style    
+    
     $extInfo = $false
     if($Global:MyWorkSpace.Length -gt 0) {
-        $bld = $Global:MyWorkSpace.PadLeft(68, ' ')         
-        WriteANSI "  $bld  " -Style "$BOLD"
+        $e = $Global:MyWorkSpace
+        $bld = $e.PadLeft(0, ' ')         
+        WriteANSI " 🛠️ $bld" -Style $Style
         $extInfo = $true
     }    
     if($Global:DbName.Length -gt 0) {
-        $db = $Global:DbName.PadLeft(58, ' ')         
-        WriteANSI "  $db " -Style "$BOLD"
+        $e = $Global:DbName
+        $db = $e.PadLeft(0, ' ')
+        WriteANSI " 🛢️ $db" -Style $Style
         $extInfo = $true
     }    
     if($extInfo) {
-        WriteANSI "════════════════════════════════════════════════════" -Style $Style
+        WriteANSI ("═" * $w) -Style $Style
     }
 }
+
+
+
 
 function trimDate
  {
@@ -316,7 +330,7 @@ function Run-Selection {
         1 { 
             Write-Host $TITLEBAR "Rahkaran`a"            
             WriteANSI "                  R A H K A R A N                  " -Style $INVERT$BOLD
-            & ".\Rahkaran.exe" | grep -vE "warn|in app|====>|MetaEntity|\*|\?"
+            & ".\Rahkaran.exe" #| grep -vE "warn|in app|====>|MetaEntity|\*|\?"
           }
         3 { 
             WriteANSI "Starting SgRuleActionManager.exe..." -Style $BLINK
@@ -435,7 +449,7 @@ function Set-WebConfig {
         [Parameter(Mandatory = $false)]
         [string]$LockFileName = "",
 
-        [Alias("db")]       
+        [Alias("d")]       
         [Parameter(Mandatory = $false)]
         [string]$DataBase = ""
     )    
@@ -446,11 +460,10 @@ function Set-WebConfig {
         '        <add key="ProcessEngineEnabled" value="true" />') 
     
     if($LockFileName.Length -gt 0) { 
-
         $remLines += @('LockLicenseGuid', 'SoftLicensePath')
         $newLines += @(
             '        <add key="LockLicenseGuid" value="{00000000-0000-0000-0000-00000000000d}" />',
-		    '        <add key="SoftLicensePath" value="D:\soft\' + $LockFileName + '.sgsl" />')
+		    "        <add key=`"SoftLicensePath`" value=`"D:\soft\$LockFileName.sgsl`" />")
     }
 
     Remove-LineByPattern -InputFile $Conf.Web -Patterns $remLines -Verbose
