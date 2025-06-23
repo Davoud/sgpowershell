@@ -104,3 +104,32 @@ function Get-PadLeft {
     }    
     return ("$WithChar" * $padLength) + $Text     
 }
+
+function Get-Link {
+    param (    
+        [string]$Name,
+        [string]$Url    
+    )
+    $startLink = "`e]8;;$url`a"
+    $endLink = "`e]8;;`a"
+    return "$startLink$Name$endLink"
+}
+
+function Get-AnsiLinkedFolder {
+    param (
+        [string]$Name,
+        [string]$FolderPath
+    )
+    try {
+        $resolvedPath = Resolve-Path -Path $FolderPath -ErrorAction Stop
+        $uri = "file:///$($resolvedPath.Path -replace '\\','/')"
+                
+        $startLink = "`e]8;;$uri`a"
+        $endLink = "`e]8;;`a"
+
+        "$startLink$Name$endLink"
+    }
+    catch {
+        Write-Error "Invalid path: $FolderPath"
+    }
+}

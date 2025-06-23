@@ -1,17 +1,23 @@
-Import-Module "C:\Users\davoodn\Documents\PowerShell\AnsiUtils.psm1"
+#Import-Module "C:\Users\davoodn\Documents\PowerShell\AnsiUtils.psm1"
 Import-Module "C:\Users\davoodn\Documents\PowerShell\LineTools.psm1"
+Import-Module "C:\Users\davoodn\Documents\PowerShell\WorkItems.psm1"
+
 Set-Variable -Name MyWorkSpace -Value ""
 Set-Variable -Name DbName -Value ""
 Set-Variable -Name Conf
 Set-Variable -Name BasePath -Value "D:\Alborz\src\System"
 Set-Variable -Name JalaliDate -Value ""
 Set-Variable -Name JalaliDayOfWeek -Value " "
+Set-Variable -Name HasInit -Value $false
+
+Set-Alias -Name edit -Value micro.exe
 class Config {
 
     [string]$Web
     [string]$EngH
     [string]$Era
     [string]$Eng
+    [string]$SrvM
     [bool]$IsNetCore    
 
     Config([string]$targetPath) {
@@ -20,7 +26,8 @@ class Config {
         $this.Web = Join-Path $targetPath "webroot\web.config"
         $this.EngH = Join-Path $targetPath "SgProcessEngineHost.$ext.config"
         $this.Era = Join-Path $targetPath "SgRuleActionManager.$ext.config"
-        $this.Eng = Join-Path $targetPath "SgProcessEngine.$ext.config"        
+        $this.Eng = Join-Path $targetPath "SgProcessEngine.$ext.config" 
+        $this.SrvM = Join-Path $targetPath "ServerManager.$ext.config"        
     }
 }
 
@@ -37,6 +44,10 @@ function format-drive-name {
 }
 
 function prompt { 
+    if(-not $HasInit) {
+        return "$PWD>"
+    }
+
     $oldColor = $Host.UI.RawUI.ForegroundColor       
     $fullPath = [System.IO.Path]::GetFullPath($executionContext.SessionState.Path.CurrentLocation)
     $currentFolder = $fullPath -split '[\\/]' | Where-Object { $_ }    
@@ -67,8 +78,11 @@ function prompt {
 function SgInit {
     param (
         [Parameter(Mandatory = $false)]
-        [ValidateSet("dvp", "17", "18", "19", "ui2", "ps", "help")]
-        [string]$wd = "help"
+        [ValidateSet("dvp", "17", "18", "19", "19+", "ui2", "ps", "help")]
+        [string]$wd = "help",
+
+        [switch]$NoClear
+
     )          
 
     $paths = @{
@@ -76,6 +90,7 @@ function SgInit {
         "17" = "D:\Alborz\src\System\Prd\V17\R17.0.x\Bin"
         "18" = "D:\Alborz\src\System\Prd\V18\R18.0.x\Bin"
         "19" = "D:\Alborz\src\System\Prd\V19\R19.0.x\Bin"
+        "19+" = "D:\Alborz\src\System\Prd\V19\R19.1.x\Bin\net8.0-windows"
         "ui2" = "D:\SystemGit\UI2\apps\farayar"
         "ps" = "C:\Users\davoodn\Documents\PowerShell" 
     }
@@ -88,7 +103,8 @@ function SgInit {
 
     $targetPath = $paths[$wd]    
 
-    if (Test-Path $targetPath) {	
+    if (Test-Path $targetPath) {
+        $Global:BasePath = $targetPath	
         Set-Location -Path $targetPath  	   
         
         $global:Conf = [Config]::new($targetPath)
@@ -119,17 +135,29 @@ function SgInit {
     $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian 
     $Global:JalaliDayOfWeek = $Global:JalaliDayOfWeek = Get-JalaliWeekDay  
 
-    Get-Ws
+    $Global:HasInit = $true
+
+    if($NoClear) {
+        Get-Ws
+    }
+    else {
+        Get-Ws -ClearHost
+    }
 }
 
 function Get-Ws {
-    param( $Style = "$BOLD" )           
+    param(
+        $Style = "$BOLD",
+        [switch]$ClearHost
+    )           
     $w = [Math]::Min($Host.UI.RawUI.WindowSize.Width, 100)
 
     $date = (Get-Date -Format "yyyy - MM - dd")
     $month = (Get-Date -Format "MMMM").PadLeft($w - $date.Length - 5, ' ')
     
-    Clear-Host    
+    if($ClearHost) {
+        Clear-Host    
+    }
     WriteANSI ("═" * $w) -Style $Style    
     WriteANSI "  $JalaliDate  $($JalaliDayOfWeek.PadLeft($w - $JalaliDate.Length - 5, ' ')) " -Style $Style
     WriteAnSI "  $date $month" -Style $Style    
@@ -423,24 +451,6 @@ function Get-JalaliWeekDay {
     }
 }
 
-function Get-AnsiLink {
-    param (
-        [string]$Name,
-        [string]$FolderPath
-    )
-    try {
-        $resolvedPath = Resolve-Path -Path $FolderPath -ErrorAction Stop
-        $uri = "file:///$($resolvedPath.Path -replace '\\','/')"
-                
-        $startLink = "`e]8;;$uri`a"
-        $endLink = "`e]8;;`a"
-
-        "$startLink$Name$endLink"
-    }
-    catch {
-        Write-Error "Invalid path: $FolderPath"
-    }
-}
 
 
 function Set-WebConfig {
@@ -467,13 +477,55 @@ function Set-WebConfig {
     }
 
     Remove-LineByPattern -InputFile $Conf.Web -Patterns $remLines -Verbose
-
+    #TODO: $cleanedXmlContent = $xmlContent -replace '<!--.*?-->', ''
     Add-LinesAfterMatch -InputFile $Conf.Web -MatchPattern "<appSettings>" `
         -LinesToInsert $newLines `
         -InsertAfterFirstOnly `
         -Verbose
 
     if($DataBase.Length -gt 0) {
-        Set-DB -filePath $Web.Conf -name $DataBase
+        Set-DB -filePath $Conf.Web -name $DataBase
     }
+}
+
+
+function Get-DllVersion {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        Write-Error "DLL file not found at: $Path"
+        return $null
+    }
+
+    try {
+        $fileInfo = Get-Item $Path
+        $versionInfo = $fileInfo.VersionInfo     
+        return $versionInfo.FileVersion        
+
+    } catch {
+        Write-Error "An error occurred while retrieving DLL version for '$Path': $($_.Exception.Message)"
+        return $null
+    }
+}
+
+[CmdletBinding]
+function SgBuild {    
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Path,
+        [Parameter(Mandatory=$false)]
+        [string]$Version
+    )   
+
+    if($null -eq $Version) {
+        & dotnet build $Path --no-restore --verbosity m -f net8.0-windows | grep -v "warning"        
+    }
+    else {
+        & dotnet build $Path --no-restore --verbosity m -f net8.0-windows -p:Version=$Version | grep -v "warning"        
+    }
+    
+    
 }

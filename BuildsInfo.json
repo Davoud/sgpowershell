@@ -1,0 +1,49 @@
+{
+    "Main": [
+        {
+            "Name": "SGBuild.Main.2020",
+            "Id": "1071",
+            "Project": "General",
+            "DropPath": "\\\\srv-drop\\Builds\\Main"
+        },        
+        {
+            "Name": "FrameworkBuild.Main.2020",
+            "Id": "1087",
+            "Project": "System",
+            "DropPath": "\\\\srv-drop\\Builds\\Main"
+        },
+        {
+            "Name": "FrameworkBuild.Dvp.2020",
+            "Id": "1087",
+            "Project": "System",
+            "DropPath": "\\\\srv-drop\\Builds\\Dvp"
+        },
+        {
+            "Name": "FarayarBuild.Dvp.2020",
+            "Id": "1835",
+            "Project": "System",
+            "DropPath": "\\\\srv-drop\\Builds\\Dvp"
+        }
+    ],
+    "19" : [
+        {
+            "Name": "",
+            "Id": "",
+            "Project": "",
+            "DropPath": "\\\\srv-drop\\Builds\\"
+        },
+        {
+            "Name": "",
+            "Id": "",
+            "Project": "",
+            "DropPath": "\\\\srv-drop\\Builds\\"
+        },
+        {
+            "Name": "",
+            "Id": "",
+            "Project": "",
+            "DropPath": "\\\\srv-drop\\Builds\\"
+        }
+    ]
+}
+
