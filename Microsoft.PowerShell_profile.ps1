@@ -519,9 +519,18 @@ function SgBuild {
         [Parameter(Mandatory=$false)]
         [string]$Version
     )   
-
+    
     if($null -eq $Version) {
-        & dotnet build $Path --no-restore --verbosity m -f net8.0-windows | grep -v "warning"        
+        (if (Split-Path -Path $Conf.Web -Extension) -eq "csproj") 
+        {
+            [xml]$csproj = Get-Content -Path $Path
+            $asmName = $csproj.SelectSingleNode("//AssemblyName").InnerText 
+            $Version = Get-DllVersion -Path "$(Join-Path $BasePath $asmName).dll"
+            & dotnet build $Path --no-restore --verbosity m -f net8.0-windows -p:Version=$Version    
+        }
+        else {        
+            & dotnet build $Path --no-restore --verbosity m -f net8.0-windows | grep -v "warning"        
+        }
     }
     else {
         & dotnet build $Path --no-restore --verbosity m -f net8.0-windows -p:Version=$Version | grep -v "warning"        

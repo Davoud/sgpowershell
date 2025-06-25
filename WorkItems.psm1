@@ -38,8 +38,12 @@ function Show-Azure {
 
     switch ($wd) {
         "dvp" 
-        {                            
-            $menu = $json.Main | ForEach-Object { Add-MenuItem " " (Get-BuildLink $_.Name $_.Id $_.Project) }
+        {   
+            $index = 1                         
+            $menu = $json.Main | ForEach-Object { 
+                Add-MenuItem "$index" (Get-BuildLink $_.Name $_.Id $_.Project) 
+                $index += 1
+            }
             
         }
         "19" 
