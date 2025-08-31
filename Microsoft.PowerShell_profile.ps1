@@ -14,6 +14,8 @@ Set-Variable -Name CodeLine -Value "dfc"
 Set-Alias -Name edit -Value micro.exe
 Set-Alias -Name zip -Value Compress-Archive
 Set-Alias -Name unzip -Value Expand-Archive
+Set-Alias -Name "^" -Value Set-LocationUp
+Set-Alias -Name ">>" -Value Set-LocationDown
 
 class Config {
 
@@ -48,11 +50,11 @@ function format-drive-name {
 }
 
 function prompt { 
-    if(-not $HasInit) {
+    if (-not $HasInit) {
         return "$PWD>"
     }
   
-    if($null -ne (git rev-parse --git-dir)) {        
+    if ($null -ne (git rev-parse --git-dir)) {        
         return promptgit
     }
 
@@ -61,8 +63,8 @@ function prompt {
     $currentFolder = $fullPath -split '[\\/]' | Where-Object { $_ }    
     $driveName = format-drive-name $currentFolder[0]   
     $currentFolder = $currentFolder 
-        | Select-Object -Skip 1 
-        | ForEach-Object { (ANSI $_ -Style "$ITALIC$FG_MAGENTA") }
+    | Select-Object -Skip 1 
+    | ForEach-Object { (ANSI $_ -Style "$ITALIC$FG_MAGENTA") }
           
     Write-Host " $driveName `u{1F4C2} $($currentFolder -Join ', ') "     
     
@@ -71,7 +73,7 @@ function prompt {
 }
 
 function promptgit {
-    $branchName  = (git branch --show-current)     
+    $branchName = (git branch --show-current)     
     $fullPath = [System.IO.Path]::GetFullPath($executionContext.SessionState.Path.CurrentLocation)   
     
     $blen = $branchName.Length
@@ -85,7 +87,7 @@ function promptgit {
     $line = " ─" * ($width / 4)
     $bline = "━" * ($width - 1)     
     
-    if($blen + $plen + 10 -gt $width) {
+    if ($blen + $plen + 10 -gt $width) {
         Write-Host "┏$bline" 
         Write-Host "┃ `u{1F4C2} $fullPathStyled"
         Write-Host "┃ 🌿 $branchNameStyled" 
@@ -96,7 +98,7 @@ function promptgit {
         Write-Host "┏$bline" 
         Write-Host "┃ `u{1F4C2} $fullPathStyled (🌿$branchNameStyled)" 
         Write-Host "┖─┯───$line"         
-            return "  ╰─▶ " 
+        return "  ╰─▶ " 
     }    
 }
 
@@ -110,19 +112,21 @@ function SgInit {
 
     )          
 
+    
+
     $paths = @{
         "dvp" = "D:\Alborz\src\System\Dvp\Bin\net8.0-windows"	   
-        "17" = "D:\Alborz\src\System\Prd\V17\R17.0.x\Bin"
-        "18" = "D:\Alborz\src\System\Prd\V18\R18.0.x\Bin"
-        "19" = "D:\Alborz\src\System\Prd\V19\R19.0.x\Bin"
+        "17"  = "D:\Alborz\src\System\Prd\V17\R17.0.x\Bin"
+        "18"  = "D:\Alborz\src\System\Prd\V18\R18.0.x\Bin"
+        "19"  = "D:\Alborz\src\System\Prd\V19\R19.0.x\Bin"
         "19+" = "D:\Alborz\src\System\Prd\V19\R19.1.x\Bin\net8.0-windows"
-        "20" = "D:\Alborz\src\System\Prd\V20\R20.0.x\Bin\net8.0-windows"
+        "20"  = "D:\Alborz\src\System\Prd\V20\R20.0.x\Bin\net8.0-windows"
         "20+" = "D:\Alborz\src\System\Prd\V20\R20.1.x\Bin\net8.0-windows"
         "ui2" = "D:\SystemGit\UI2\apps\farayar"
-        "ps" = "C:\Users\davoodn\Documents\PowerShell" 
+        "ps"  = "C:\Users\davoodn\Documents\PowerShell" 
     }
 
-    if($wd -eq "help") {
+    if ($wd -eq "help") {
         WriteANSI "Supported Input: " $BOLD
         $paths | Format-Table -AutoSize
         return
@@ -142,33 +146,34 @@ function SgInit {
         
         $deployInfo = Join-Path $targetPath "..\DeployInfo.json"               
 
-        if(Test-Path $deployInfo) {            
+        if (Test-Path $deployInfo) {            
             $json = Get-Content -Path $deployInfo -Raw | ConvertFrom-Json
             $base = if ($Conf.IsNetCore) { $json.App."net8.0" } else { $json.App }            
             $bldInfo = $Base.BuildNumber -Split '[.]' | Where-Object { $_ } | Select-Object -Skip 1    
             
             #🛠️
             $Global:MyWorkSpace = if ($bldInfo.Length -gt 2) {        
-                 "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
-            } else { "" }
+                "$(ANSI $bldInfo[0] -Style "$FG_GREEN").$(trimDate($bldInfo[1])).$(ANSI $bldInfo[2] -Style "$FG_YELLOW")"
+            }
+            else { "" }
             #🛢️
-            $Global:DbName = if($base.DataBase.Length -gt 0) { $base.DataBase } else { "" }
+            $Global:DbName = if ($base.DataBase.Length -gt 0) { $base.DataBase } else { "" }
         }
         else {            
             $Global:MyWorkSpace = ""           
             $Global:DbName = ""
         }
              
-    } else {
+    }
+    else {
         Write-Error "Path does not exist: $targetPath"
     }
 
     $Global:JalaliDate = Get-JalaliDate | Convert-NumbersToPersian 
-    $Global:JalaliDayOfWeek = $Global:JalaliDayOfWeek = Get-JalaliWeekDay  
-
+    $Global:JalaliDayOfWeek = $Global:JalaliDayOfWeek = Get-JalaliWeekDay      
     $Global:HasInit = $true
 
-    if($NoClear) {
+    if ($NoClear) {
         Get-Ws
     }
     else {
@@ -186,7 +191,7 @@ function Get-Ws {
     $date = (Get-Date -Format "yyyy - MM - dd")
     $month = (Get-Date -Format "MMMM").PadLeft($w - $date.Length - 5, ' ')
     
-    if($ClearHost) {
+    if ($ClearHost) {
         Clear-Host    
     }
     WriteANSI ("═" * $w) -Style $Style    
@@ -195,19 +200,19 @@ function Get-Ws {
     WriteANSI ("─" * $w) -Style $Style    
     
     $extInfo = $false
-    if($Global:MyWorkSpace.Length -gt 0) {
+    if ($Global:MyWorkSpace.Length -gt 0) {
         $e = $Global:MyWorkSpace
         $bld = $e.PadLeft(0, ' ')         
         WriteANSI " 🛠️ $bld" -Style $Style
         $extInfo = $true
     }    
-    if($Global:DbName.Length -gt 0) {
+    if ($Global:DbName.Length -gt 0) {
         $e = $Global:DbName
         $db = $e.PadLeft(0, ' ')
         WriteANSI " 🛢️ $db" -Style $Style
         $extInfo = $true
     }    
-    if($extInfo) {
+    if ($extInfo) {
         WriteANSI ("═" * $w) -Style $Style
     }
 }
@@ -215,8 +220,7 @@ function Get-Ws {
 
 
 
-function trimDate
- {
+function trimDate {
     param (
         [Parameter(Mandatory)]
         [string]$i
@@ -231,7 +235,7 @@ function npp {
         [string]$f
     )
     process {
-        if(Test-Path $f) {
+        if (Test-Path $f) {
             Start-Process -FilePath "C:\Program Files\Notepad++\notepad++.exe" -ArgumentList "$f"
         }        
     }
@@ -259,28 +263,28 @@ function Set-Db {
         [string]$password = "1"
 
     )
-    process 
-    {
+    process {
         (Get-Content -Path $filePath -Raw) `
             -replace 'connectionString=".*"', `
             "connectionString=`"Data Source=$server;Initial Catalog=$name;Integrated Security=False;User ID=$uid;Password=$password`"" `
-            | Set-Content -Path $filePath
+        | Set-Content -Path $filePath
     }
 }
  
 function Set-ServerUrl {
     param (       
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]             
-        [string]$filePath
+        [string]$filePath,
+        [string]$url = "localhost:5000"
     )
     
     process {
         
         $reps = @{
-            ':5001' = ':5000'
-            ':5191' = ':5000'
-            '127.0.0.1/rahkaranAddress' = 'localhost:5000'
-            '127.0.0.1/hcmSelfServiceAddress' = 'localhost:5000'
+            ':5001'                           = ':5000'
+            ':5191'                           = ':5000'
+            '127.0.0.1/rahkaranAddress'       = $url
+            '127.0.0.1/hcmSelfServiceAddress' = $url
         }
 
         $text = Get-Content -Path $filePath -Raw
@@ -299,7 +303,7 @@ function Get-Db {
 
 function Get-DbInfo {    
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline=$true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string[]]$Files
     )
     [int]$count = 1
@@ -313,13 +317,13 @@ function Get-DbInfo {
             $connStr = $match.Groups[1].Value
             
             $dataSource = if ($connStr -match 'Data Source=([^;]+)') { $matches[1] } else { $null }
-            $catalog    = if ($connStr -match 'Initial Catalog=([^;]+)') { $matches[1] } else { $null }
+            $catalog = if ($connStr -match 'Initial Catalog=([^;]+)') { $matches[1] } else { $null }
 
             [PSCustomObject]@{
-                No           = $count
-                File         = [System.IO.Path]::GetFileName($file)
-                Server       = $dataSource
-                Database     = $catalog
+                No       = $count
+                File     = [System.IO.Path]::GetFileName($file)
+                Server   = $dataSource
+                Database = $catalog
             }
             $count += 1
         }
@@ -333,7 +337,7 @@ function Show-Menu {
     Clear-Host        
     Write-Header "Rahkaran Application Launcher Menu"    
 
-    if($dev) {
+    if ($dev) {
         $menu = @(        
             menuItem 1 "Framework Solution" "Opens the Framework.sln file"
             menuItem 2 "Process Engine Solution" "Opens the ProcessEngine.sln file"                
@@ -354,9 +358,9 @@ function Show-Menu {
             menuItem 0 "Quit" "Quit App Launcher"
         )
     }
-    $menu | Format-Table @{Label="     "; Expression={$_.Row}; Width=10; },
-                         @{Label="Application                  "; Expression={$_.Name}; Width=60 },
-                         @{Label="Description                  "; Expression={$_.Description}; Width=40 } -AutoSize      
+    $menu | Format-Table @{Label = "     "; Expression = { $_.Row }; Width = 10; },
+    @{Label = "Application                  "; Expression = { $_.Name }; Width = 60 },
+    @{Label = "Description                  "; Expression = { $_.Description }; Width = 40 } -AutoSize      
 }
 
 function menuItem {
@@ -376,52 +380,50 @@ function Run-Selection {
         [bool]$isDev = $false
     )
     #TODO (replce with absoute paths)
-    if($dev) {
-        $pr = Join-Path $BasePath ".." ".." $Global:CodeLine
+    if ($dev) {
+        $pr = Join-Path $BasePath ".." $Global:CodeLine
         switch ($choice) {
-            1 { 
-                 & "$pr\Framework\Framework.sln"
-              }              
-            2 {
-                 & "$pr\Components\ProcessEngine\ProcessEngine.sln"
-              }
-            3 {
-                &  "$pr\Components\BusinessRuleEngine\BusinessRuleEngine.sln"
-              }
-            4 {
-                &  "$pr\Components\FormBuilder\FormBuilder.sln"
-              }
+            1 { & "$pr\Framework\Framework.sln" }              
+            2 { & "$pr\Components\ProcessEngine\ProcessEngine.sln" }
+            3 { &  "$pr\Components\BusinessRuleEngine\BusinessRuleEngine.sln" }
+            4 { &  "$pr\Components\FormBuilder\FormBuilder.sln" }
             Default { Write-Host "Invalid selection: ($choice) `n" }  
         }
         return;
     }
         
     switch ($choice) {
-        1 { 
-            Write-Host $TITLEBAR "Rahkaran`a"     
-            Write-Header "R A H K A R A N "
-            Restart-Service -Name Redis -Verbose			            
-            & (Join-Path $BasePath "Rahkaran.exe")
-          }
+        1 {             			
+            if ((Get-Process -Name "Rahkaran" -ErrorAction SilentlyContinue).Id -gt 0) {
+                Write-Host " | Another instance of 'Rahkaran' is running!"	-ForegroundColor Red
+            }
+            else {
+                Write-Host $TITLEBAR "Rahkaran`a"     	
+                Restart-Service -Name Redis -Verbose			            
+                Write-Header "R A H K A R A N "           
+                & (Join-Path $BasePath "Rahkaran.exe")
+            }			
+        }   
         3 { 
             WriteANSI "Starting SgRuleActionManager.exe..." -Style $BLINK
-            Start-Process "SgRuleActionManager.exe"
-          }
+            Start-Process (Join-Path $BasePath "SgRuleActionManager.exe")
+        }
         2 { 
             Write-Host $TITLEBAR "Process Engine`a"
             Write-Header "P R O C E S S    E N G I N E"            
-            & ".\SgProcessEngine.exe" 
-          }
+            & (Join-Path $BasePath "SgProcessEngine.exe")
+        }
         5 { 
             WriteANSI "Starting ServerManager.exe..." -Style $BLINK
-            Start-Process "ServerManager.exe"
-          }        
+            Start-Process (Join-Path $BasePath "ServerManager.exe")
+        }        
         4 { 
             WriteANSI "Starting SgProcessEngineHost.exe..." -Style $BLINK
-            Start-Process "SgProcessEngineHost.exe" }
+            Start-Process (Join-Path $BasePath "SgProcessEngineHost.exe") 
+        }
         0 { 
             return 
-          }
+        }
         Default { Write-Host "Invalid selection: ($choice) `n" }
     }
 }
@@ -443,13 +445,13 @@ function Sg {
     )
         
     if (-not [string]::IsNullOrEmpty($code)) {
-       if($code -match '^\d+$') {
-         $choice = [int]$code
-         if($choice -ge 1 -and $choice -le 6) {
-            Run-Selection -choice $choice -isDev $dev       
-            return
-         } 
-       }       
+        if ($code -match '^\d+$') {
+            $choice = [int]$code
+            if ($choice -ge 1 -and $choice -le 6) {
+                Run-Selection -choice $choice -isDev $dev       
+                return
+            } 
+        }       
     }
    
     Show-Menu -isDev $dev
@@ -458,15 +460,15 @@ function Sg {
     if ($choice -match '^\d+$') {
         $choice = [int]$choice
         Run-Selection -choice $choice $dev               
-    } else {
+    }
+    else {
         Write-Host "Please enter a valid number.`n"
         Pause
     }
 
 }
 
-function hybernate 
-{    
+function hybernate {    
     param (
         [Parameter(Mandatory = $false)]
         [int]$delaySeconds = 10800,
@@ -492,14 +494,14 @@ function Get-JalaliWeekDay {
     $day = $pc.GetDayOfWeek($now);
 
     switch ($day) {
-        "Monday"    { return "هبنش ود"  }
-        "Tuesday"   { return "هبنش هس"  }
+        "Monday" { return "هبنش ود" }
+        "Tuesday" { return "هبنش هس" }
         "Wednesday" { return "هبنش راهچ" }
-        "Thursday"  { return "هبنش جنپ" }
-        "Friday"    { return "هعمج" }
-        "Saturday"  { return "هبنش" }
-        "Sunday"    { return "هبنش کـی" }
-        default     { return "الله" }
+        "Thursday" { return "هبنش جنپ" }
+        "Friday" { return "هعمج" }
+        "Saturday" { return "هبنش" }
+        "Sunday" { return "هبنش کـی" }
+        default { return "الله" }
     }
 }
 
@@ -522,11 +524,11 @@ function Set-All {
         '    <add key="ProcessEngineEnabled" value="true" />',
         '	 <add key="ReportServerUrl" value="" />') 
     
-    if($LockFileName.Length -gt 0) { 
+    if ($LockFileName.Length -gt 0) { 
         $remLines += @('LockLicenseGuid', 'SoftLicensePath')
         $newLines += @(
             '        <add key="LockLicenseGuid" value="{00000000-0000-0000-0000-00000000000d}" />',
-		    "        <add key=`"SoftLicensePath`" value=`"D:\soft\$LockFileName.sgsl`" />")
+            "        <add key=`"SoftLicensePath`" value=`"D:\soft\$LockFileName.sgsl`" />")
     }
 
     Remove-LineByPattern -InputFile $Conf.Web -Patterns $remLines -Verbose
@@ -536,7 +538,7 @@ function Set-All {
         -InsertAfterFirstOnly `
         -Verbose
 
-    if($DataBase.Length -gt 0) {
+    if ($DataBase.Length -gt 0) {
         Set-Db -filePath $Conf.Web -name $DataBase
         Set-Db -filePath $Conf.Eng -name $DataBase
     }
@@ -550,7 +552,7 @@ function Set-All {
 
 function Get-DllVersion {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Path
     )
 
@@ -564,7 +566,8 @@ function Get-DllVersion {
         $versionInfo = $fileInfo.VersionInfo     
         return $versionInfo.FileVersion        
 
-    } catch {
+    }
+    catch {
         Write-Error "An error occurred while retrieving DLL version for '$Path': $($_.Exception.Message)"
         return $null
     }
@@ -572,35 +575,146 @@ function Get-DllVersion {
 
 function SgBuild {    
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Path
     )   
     
-    if ((Split-Path -Path $Path -Extension) -eq "csproj") 
-    {
+    if ((Split-Path -Path $Path -Extension) -eq ".csproj") {
         [xml]$csproj = Get-Content -Path $Path
         $asmName = $csproj.SelectSingleNode("//AssemblyName").InnerText 
         $file = "$(Join-Path $BasePath $asmName).dll"
-        $Version = Get-DllVersion -Path $file
-            
-        & dotnet build $Path --verbosity m -p:Version=$Version  
-            
-        Get-DllVersion $file | Write-Host
-        $ ls $file
+        $version = Get-DllVersion -Path $file
+        $line = "─" * ((Get-Width) - 1)
+        Write-Host "┎$line"
+        Write-Host "┃ $file"
+        Write-Host "┃ $version "
+        Write-Host 
+        		
+        & dotnet build $Path -p:Version=$version --no-restore --verbosity m
+
+        Write-Host 
+        Write-Host "┃ $file $(Get-DllVersion $file)]"        
+        Write-Host "┖$line"
     }
     else {        
-        & dotnet build $Path --verbosity m -f net8.0-windows | grep -v "warning"        
+        Write-Header (Split-Path $Path -Leaf)
+        & dotnet build $Path --no-restore --verbosity m
     }      
 }
 
 function Get-Last {
-	param (
-		[Parameter(Mandatory=$false, ValueFromPipeline=$true)]
+    param (
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [string]$Path = "."
-	)
+    )
 
-	Get-childItem -Path $Path -File `
+    Get-childItem -Path $Path -File `
 		| Sort-Object LastWriteTime -Descending `
 		| Select-Object -First 1 `
 		| ForEach-Object { $_.Name } 
+}
+
+function Get-Width { [Math]::Min($Host.UI.RawUI.WindowSize.Width, 100) }
+
+function Show-InteractiveMenu {
+    param(
+        [string[]]$Options,
+        [string]$Title = "Select an option:"
+    )
+
+    $cursor = 0
+    $key = $null
+
+    # Clear any previous input
+    while ([Console]::KeyAvailable) { [Console]::ReadKey($true) }
+
+    do {
+        # Clear the screen and redraw
+        Clear-Host
+        Write-Host "$Title`n" -ForegroundColor Cyan
+
+        for ($i = 0; $i -lt $Options.Count; $i++) {
+            $prefix = if ($i -eq $cursor) { "  ► " } else { "    " }
+            $color = if ($i -eq $cursor) { "Yellow" } else { "White" }
+            Write-Host "$prefix$($Options[$i])" -ForegroundColor $color
+        }
+
+        $key = [Console]::ReadKey($true)
+
+        switch ($key.Key) {
+            UpArrow { if ($cursor -gt 0) { $cursor-- } }
+            DownArrow { if ($cursor -lt ($Options.Count - 1)) { $cursor++ } }
+            Enter { return $Options[$cursor] }
+            Escape { return $null }
+        }
+
+    } while ($key.Key -ne "Escape")
+
+    return $null  # Return null if Esc was pressed
+}
+
+function Set-Portal {
+
+    param(
+        [string]$Url = "http://localhost:5000",
+        [string]$Path = "appsettings.json",
+        [string]$Context = "Presnetation",
+        [string]$FrontEndPath = "../EmployeePortal"
+    )
+    
+    if (-not (Test-Path $Path)) {
+        Write-Error "File not found: $Path"
+        exit 1
+    }
+    
+    try {
+        $JsonContent = Get-Content -Path $Path -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-Error "Failed to parse $Path : $_"
+        exit 1
+    }
+    
+    $JsonContent.Rahkaran.ServiceFactory = $Url
+    $JsonContent.Rahkaran.RahkaranUrl = $Url
+    $JsonContent.Rahkaran.ReportServerUrl = ""
+    $JsonContent.Rahkaran.Context = $Context
+
+    $JsonContent | Add-Member -MemberType NoteProperty -Name "FrontEndPath" -Value $FrontEndPath -Force
+
+
+    try {
+        $UpdatedJson = $JsonContent | ConvertTo-Json -Depth 10
+        $UpdatedJson | Set-Content -Path $Path
+        Write-Host "$Path updated successfully." -ForegroundColor Green
+    }
+    catch {
+        Write-Error "Failed to write $Path : $_"
+        exit 1
+    }
+}
+
+function Set-LocationUp {
+	param([int]$Levels = 1)
+	$path = ('..\' * $Levels)
+	Set-Location $path
+}
+
+function Set-LocationDown {
+	
+    $folerNames = [System.Collections.Generic.List[string]]::new()
+    $folerNames.Add(".")
+    $folerNames.Add("..")
+    Get-ChildItem -Directory | ForEach-Object { $folerNames.Add($_.Name) } 
+
+    $selectedItem = Show-InteractiveMenu -Options @($folerNames) -Title $pwd 
+    switch ($selectedItem) {
+        "." { return }        
+        $null { return }
+        Default 
+        { 
+            Set-Location $selectedItem
+            Set-LocationDown
+        }
+    }
 }

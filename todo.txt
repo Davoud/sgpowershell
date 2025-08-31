@@ -1,4 +1,5 @@
 Set-All (works for core and net48)
 Add a cmdlet to update keys in config files
 Add a cmdlet to set rahkaran configs online
+Add a cmdlet to faciltate bulding projects from solutions
 
